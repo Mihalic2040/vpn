@@ -1,0 +1,20 @@
+services:
+  wireguard-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wireguard-client-proxy
+    restart: unless-stopped
+    environment:
+      WG_PRIVATE_KEY: "${WG_PRIVATE_KEY:?WG_PRIVATE_KEY is required}"
+      WG_ADDRESS: "${WG_ADDRESS:?WG_ADDRESS is required}"
+      WG_SERVER_PUBLIC_KEY: "${WG_SERVER_PUBLIC_KEY:?WG_SERVER_PUBLIC_KEY is required}"
+      WG_PRESHARED_KEY: "${WG_PRESHARED_KEY:?WG_PRESHARED_KEY is required}"
+      WG_ENDPOINT: "${WG_ENDPOINT:?WG_ENDPOINT is required}"
+      WG_ALLOWED_IPS: "${WG_ALLOWED_IPS:?WG_ALLOWED_IPS is required}"
+      WG_PERSISTENT_KEEPALIVE: "${WG_PERSISTENT_KEEPALIVE:-25}"
+      TARGET_HOST: "${TARGET_HOST:?TARGET_HOST is required}"
+      TARGET_PORT: "${TARGET_PORT:?TARGET_PORT is required}"
+      PORT: "${PORT:-8080}"
+    ports:
+      - "${APP_EXPOSE_PORT:-8080}:${PORT:-8080}"

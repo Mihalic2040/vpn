@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+wireguard/
+*.conf
+.git/
+.gitignore
