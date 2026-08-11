@@ -2,7 +2,8 @@ FROM golang:1.26-bookworm AS wireproxy-builder
 
 USER root
 
-ARG WIREPROXY_VERSION=v1.1.3
+#ARG WIREPROXY_VERSION=v1.1.3
+ARG WIREPROXY_VERSION=59258176bd8cbdf21602af795e081d3718678b3a
 
 RUN CGO_ENABLED=0 go install github.com/windtf/wireproxy/cmd/wireproxy@${WIREPROXY_VERSION}
 
