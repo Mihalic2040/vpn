@@ -21,7 +21,7 @@ func TestGenerateConfigSupportsBothDirectionsAndDNS(t *testing.T) {
 	}
 
 	generated := string(config)
-	assertContains(t, generated, "[Interface]\nAddress = 10.8.0.3/32\nMTU = 1280\n")
+	assertContains(t, generated, "[Interface]\nAddress = 10.8.0.3/32\nMTU = 1200\n")
 	assertContains(t, generated, "[TCPServerTunnel]\nListenPort = 8887\nTarget = api.railway.internal:8000")
 	assertContains(t, generated, "[TCPClientTunnel]\nBindAddress = [::]:8893\nTarget = 10.8.0.2:5566")
 	assertContains(t, generated, "[TCPClientTunnel]\nBindAddress = [::]:8894\nTarget = [2001:db8::2]:443")
@@ -63,7 +63,19 @@ func TestGenerateConfigNormalizesWireGuardLists(t *testing.T) {
 		t.Fatalf("generateConfig returned an error: %v", err)
 	}
 	assertContains(t, string(config), "Address = 10.8.0.3/32, fd00::3/128")
+	assertContains(t, string(config), "MTU = 1280")
 	assertContains(t, string(config), "AllowedIPs = 10.8.0.0/24, fd00::/64")
+}
+
+func TestGenerateConfigRejectsIPv6MTUBelow1280(t *testing.T) {
+	env := validEnvironment()
+	env["WG_ADDRESS"] = "10.8.0.3/32, fd00::3/128"
+	env["WG_MTU"] = "1200"
+
+	_, err := generateConfig(mapLookup(env))
+	if err == nil || !strings.Contains(err.Error(), "from 1280 through 65535") {
+		t.Fatalf("expected IPv6 MTU minimum error, got %v", err)
+	}
 }
 
 func TestGenerateConfigRejectsInvalidRoutes(t *testing.T) {
@@ -110,7 +122,7 @@ func TestGenerateConfigRejectsInvalidWireGuardValuesWithoutLeakingSecrets(t *tes
 		{name: "public key", field: "WG_SERVER_PUBLIC_KEY", value: "secret-invalid-public-key", want: "WG_SERVER_PUBLIC_KEY"},
 		{name: "preshared key", field: "WG_PRESHARED_KEY", value: "secret-invalid-preshared-key", want: "WG_PRESHARED_KEY"},
 		{name: "address", field: "WG_ADDRESS", value: "not-a-prefix", want: "WG_ADDRESS"},
-		{name: "small MTU", field: "WG_MTU", value: "1279", want: "WG_MTU"},
+		{name: "small MTU", field: "WG_MTU", value: "575", want: "WG_MTU"},
 		{name: "large MTU", field: "WG_MTU", value: "65536", want: "WG_MTU"},
 		{name: "non-integer MTU", field: "WG_MTU", value: "large", want: "WG_MTU"},
 		{name: "endpoint", field: "WG_ENDPOINT", value: "vpn.example.com", want: "WG_ENDPOINT"},

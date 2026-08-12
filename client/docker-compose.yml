@@ -9,7 +9,7 @@ services:
     environment:
       WG_PRIVATE_KEY: "${WG_PRIVATE_KEY:?WG_PRIVATE_KEY is required}"
       WG_ADDRESS: "${WG_ADDRESS:?WG_ADDRESS is required}"
-      WG_MTU: "${WG_MTU:-1280}"
+      WG_MTU: "${WG_MTU:-1200}"
       WG_SERVER_PUBLIC_KEY: "${WG_SERVER_PUBLIC_KEY:?WG_SERVER_PUBLIC_KEY is required}"
       WG_PRESHARED_KEY: "${WG_PRESHARED_KEY:?WG_PRESHARED_KEY is required}"
       WG_ENDPOINT: "${WG_ENDPOINT:?WG_ENDPOINT is required}"

@@ -16,11 +16,13 @@ import (
 )
 
 const (
-	directionLocalToVPN = "local_to_vpn"
-	directionVPNToLocal = "vpn_to_local"
-	defaultWireGuardMTU = 1280
-	minimumWireGuardMTU = 1280
-	maximumWireGuardMTU = 65535
+	directionLocalToVPN     = "local_to_vpn"
+	directionVPNToLocal     = "vpn_to_local"
+	defaultIPv4WireGuardMTU = 1200
+	defaultIPv6WireGuardMTU = 1280
+	minimumIPv4WireGuardMTU = 576
+	minimumIPv6WireGuardMTU = 1280
+	maximumWireGuardMTU     = 65535
 )
 
 type route struct {
@@ -110,9 +112,15 @@ func parseEnvironment(getenv getenvFunc) (*environment, error) {
 		return nil, err
 	}
 
-	mtu := defaultWireGuardMTU
+	hasIPv6 := containsIPv6Prefix(address)
+	mtu := defaultIPv4WireGuardMTU
+	minimumMTU := minimumIPv4WireGuardMTU
+	if hasIPv6 {
+		mtu = defaultIPv6WireGuardMTU
+		minimumMTU = minimumIPv6WireGuardMTU
+	}
 	if value, ok := getenv("WG_MTU"); ok && strings.TrimSpace(value) != "" {
-		mtu, err = parseMTU(value)
+		mtu, err = parseMTU(value, minimumMTU)
 		if err != nil {
 			return nil, err
 		}
@@ -182,12 +190,22 @@ func parseEnvironment(getenv getenvFunc) (*environment, error) {
 	}, nil
 }
 
-func parseMTU(value string) (int, error) {
+func parseMTU(value string, minimum int) (int, error) {
 	mtu, err := strconv.Atoi(strings.TrimSpace(value))
-	if err != nil || mtu < minimumWireGuardMTU || mtu > maximumWireGuardMTU {
-		return 0, fmt.Errorf("WG_MTU must be an integer from %d through %d", minimumWireGuardMTU, maximumWireGuardMTU)
+	if err != nil || mtu < minimum || mtu > maximumWireGuardMTU {
+		return 0, fmt.Errorf("WG_MTU must be an integer from %d through %d", minimum, maximumWireGuardMTU)
 	}
 	return mtu, nil
+}
+
+func containsIPv6Prefix(value string) bool {
+	for _, part := range strings.Split(value, ",") {
+		prefix, err := netip.ParsePrefix(strings.TrimSpace(part))
+		if err == nil && prefix.Addr().Is6() {
+			return true
+		}
+	}
+	return false
 }
 
 func required(getenv getenvFunc, name string) (string, error) {
