@@ -105,6 +105,7 @@ Required variables:
 ```text
 WG_PRIVATE_KEY=<gateway peer private key>
 WG_ADDRESS=10.8.0.3/32
+WG_MTU=1280
 WG_SERVER_PUBLIC_KEY=<VPS WireGuard public key>
 WG_PRESHARED_KEY=<gateway peer preshared key>
 WG_ENDPOINT=vpn.example.com:51820
@@ -114,6 +115,8 @@ ROUTES_JSON=[{"direction":"vpn_to_local","listen_port":8887,"target_host":"api.r
 ```
 
 Route changes take effect after Railway restarts or redeploys the service.
+`WG_MTU` is optional and defaults to `1280`, which keeps WireGuard packets
+below paths that black-hole larger encapsulated packets.
 
 ## Local Linux test
 
@@ -146,9 +149,10 @@ nc -v 10.8.0.3 8887
 
 ## Validation and troubleshooting
 
-Startup fails before wireproxy runs when a required value is missing or when
-`ROUTES_JSON` contains malformed JSON, unknown fields, invalid ports, invalid
-hosts, injected control characters, or duplicate listeners.
+Startup fails before wireproxy runs when a required value is missing, `WG_MTU`
+is outside `1280` through `65535`, or `ROUTES_JSON` contains malformed JSON,
+unknown fields, invalid ports, invalid hosts, injected control characters, or
+duplicate listeners.
 
 The generated configuration is stored at `/tmp/wireproxy.conf` with mode
 `0600`, checked using wireproxy's configuration test, and never logged by the

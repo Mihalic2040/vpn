@@ -18,6 +18,9 @@ import (
 const (
 	directionLocalToVPN = "local_to_vpn"
 	directionVPNToLocal = "vpn_to_local"
+	defaultWireGuardMTU = 1280
+	minimumWireGuardMTU = 1280
+	maximumWireGuardMTU = 65535
 )
 
 type route struct {
@@ -30,6 +33,7 @@ type route struct {
 type environment struct {
 	privateKey          string
 	address             string
+	mtu                 int
 	serverPublicKey     string
 	presharedKey        string
 	endpoint            string
@@ -62,6 +66,7 @@ func generateConfig(getenv getenvFunc) ([]byte, error) {
 	var config bytes.Buffer
 	fmt.Fprintln(&config, "[Interface]")
 	fmt.Fprintf(&config, "Address = %s\n", env.address)
+	fmt.Fprintf(&config, "MTU = %d\n", env.mtu)
 	fmt.Fprintf(&config, "PrivateKey = %s\n", env.privateKey)
 	fmt.Fprintln(&config)
 	fmt.Fprintln(&config, "[Peer]")
@@ -103,6 +108,14 @@ func parseEnvironment(getenv getenvFunc) (*environment, error) {
 	address, err := validatePrefixes("WG_ADDRESS", addressValue)
 	if err != nil {
 		return nil, err
+	}
+
+	mtu := defaultWireGuardMTU
+	if value, ok := getenv("WG_MTU"); ok && strings.TrimSpace(value) != "" {
+		mtu, err = parseMTU(value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	serverPublicKey, err := required(getenv, "WG_SERVER_PUBLIC_KEY")
@@ -159,6 +172,7 @@ func parseEnvironment(getenv getenvFunc) (*environment, error) {
 	return &environment{
 		privateKey:          privateKey,
 		address:             address,
+		mtu:                 mtu,
 		serverPublicKey:     serverPublicKey,
 		presharedKey:        presharedKey,
 		endpoint:            endpoint,
@@ -166,6 +180,14 @@ func parseEnvironment(getenv getenvFunc) (*environment, error) {
 		persistentKeepalive: keepalive,
 		routes:              routes,
 	}, nil
+}
+
+func parseMTU(value string) (int, error) {
+	mtu, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || mtu < minimumWireGuardMTU || mtu > maximumWireGuardMTU {
+		return 0, fmt.Errorf("WG_MTU must be an integer from %d through %d", minimumWireGuardMTU, maximumWireGuardMTU)
+	}
+	return mtu, nil
 }
 
 func required(getenv getenvFunc, name string) (string, error) {
